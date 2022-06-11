@@ -161,7 +161,7 @@ public:
     void countSum(int flag){
         for (const auto& x : dataList){
             if (std::filesystem::exists("./" + x.first) && x.first != "cksum.ini")
-                dataList[x.first] = flag == 1 ? md5(readAllBytes("./" + x.first)) : SHA1::from_file("./" + x.first);
+                setNewHash(x.first, algo("./" + x.first, flag));
         }
         for (auto& x : dataList){
             writeToINI("sum", x);
