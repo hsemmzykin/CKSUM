@@ -239,7 +239,7 @@ int main(int argc, char** argv) {
             if (out.is_open()) {
                 for (const auto &x: std::filesystem::directory_iterator("./")) {
                     if (!std::filesystem::is_directory(x.path().string())) {
-                        out << x.path().string().substr(2, x.path().string().size() - 1) << " : " << algo(filename_path, flag) << "\n";
+                        out << x.path().string().substr(2, x.path().string().size() - 1) << " : " << algo(x.path().string(), flag) << "\n";
                     }
                 }
             }
