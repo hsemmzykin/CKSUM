@@ -102,7 +102,7 @@ void printInfo(){
 }
 // int flag = {1 -- for md5, 2 -- for sha};
 static int flag = 1;
-std::string algo(const std::string& pathToFile, int flag = 1){
+std::string algo(const std::string& pathToFile, int flag){
     if (flag == 1){ //md5
         auto f = readAllBytes(pathToFile);
         return md5(f);
@@ -145,7 +145,7 @@ public:
             }
             std::string fileSeized = file.substr(2, file.size() - 1);
             if (dataList.find(fileSeized) == dataList.end()){
-                writeToINI("newfiles", {fileSeized, algo(file)});
+                writeToINI("newfiles", {fileSeized, algo(file, flag)});
             }
         }
     }
