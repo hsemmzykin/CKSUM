@@ -177,8 +177,6 @@ int main(int argc, char** argv) {
             INI.printData();
         }
     }
-    std::vector<std::string> files;
-    std::vector<IniParser> inis;
     po::options_description description("Usage: ");
     description.add_options()
             ("h, help", "NO ONE CAN HELP YOU HAHAHA")
@@ -187,7 +185,7 @@ int main(int argc, char** argv) {
             ("m, md5", "change algorithm to md5sum")
             ("f, file", po::value<std::string>()->default_value("out.txt"), "Writing to this file")
             ("r, read", po::value<std::vector<std::string>>(), "Checking these files' cksums")
-            ("c, check", po::value<std::vector<std::string>>()->default_value(std::vector<std::string>{"cksum.ini"})), "Treating provided INI files as separate cksums'");
+            ("c, check", po::value<std::vector<std::string>>()->default_value(std::vector<std::string>{"cksum.ini"})); // "Treating provided INI files as separate cksums'"
     po::positional_options_description p;
     p.add("read", -1);
     po::variables_map vm;
@@ -227,8 +225,32 @@ int main(int argc, char** argv) {
                 std::cout << x << " : " << algo("./" + x, flag) << std::endl;
         }
     }
-
-
+    if (vm.count("check")){
+        std::vector<std::string> inp = vm["check"].as<std::vector<std::string>>();
+        std::vector<std::string> inis;
+        for (const auto& x : inp){
+            if (std::regex_match(x, std::regex(R"("[^\\s]+(.*?)\\.ini$)"))){
+                inis.push_back(x);
+            }
+        }
+        for (const auto& x : inis){
+            if (std::filesystem::exists("./" + x)) {
+                IniParser pars(x);
+                pars.readDataINI();
+                if (pars.size() == 0) {
+                    std::cerr << "EMPTY " << x << " INI FILE!\n";
+                    pars.fileSysDiff();
+                    continue;
+                }
+                pars.countSum(1);
+                pars.fileSysDiff();
+                std::cout << "file " << x << " successfully checked\n\n";
+            }
+        }
+    }
+#ifdef PRINTDATA
+    printInfo();
+#endif
 }
 
 
