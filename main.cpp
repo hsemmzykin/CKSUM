@@ -102,7 +102,7 @@ void printInfo(){
 }
 // int flag = {1 -- for md5, 2 -- for sha};
 static int flag = 1;
-std::string algo(const std::string& pathToFile, int flag){
+std::string algo(const std::string& pathToFile){
     if (flag == 1){ //md5
         auto f = readAllBytes(pathToFile);
         return md5(f);
@@ -145,7 +145,7 @@ public:
             }
             std::string fileSeized = file.substr(2, file.size() - 1);
             if (dataList.find(fileSeized) == dataList.end()){
-                writeToINI("newfiles", {fileSeized, algo(file, flag)});
+                writeToINI("newfiles", {fileSeized, algo(file)});
             }
         }
     }
@@ -161,7 +161,7 @@ public:
     void countSum(int flag){
         for (const auto& x : dataList){
             if (std::filesystem::exists("./" + x.first) && x.first != "cksum.ini")
-                setNewHash(x.first, algo("./" + x.first, flag));
+                setNewHash(x.first, algo("./" + x.first));
         }
         for (auto& x : dataList){
             writeToINI("sum", x);
@@ -213,7 +213,7 @@ int main(int argc, char** argv) {
             ("md5", "change algorithm to md5sum")
             ("file", po::value<std::string>(), "Writing to this file")
             ("read", po::value<std::vector<std::string>>(), "Checking these files' cksums")
-            ("check", po::value<std::vector<std::string>>(),"Treating provided INI files as separate cksums'");
+            ("check", po::value<std::vector<std::string>>()->multitoken(),"Treating provided INI files as separate cksums'");
     po::positional_options_description p;
     p.add("read", -1);
     po::variables_map vm;
@@ -226,6 +226,13 @@ int main(int argc, char** argv) {
     if (vm.count("version")){
         std::cout << "1.4.8.6" << std::endl;
     }
+    if (vm.count("sha")){
+        flag = 2;
+    }
+    if (vm.count("md5")){
+        flag = 1;
+    }
+
     if (vm.count("file")){
         std::string filename = vm["file"].as<std::string>();
         std::string filename_path = "./" + filename;
@@ -239,7 +246,7 @@ int main(int argc, char** argv) {
             if (out.is_open()) {
                 for (const auto &x: std::filesystem::directory_iterator("./")) {
                     if (!std::filesystem::is_directory(x.path().string())) {
-                        out << x.path().string().substr(2, x.path().string().size() - 1) << " : " << algo(x.path().string(), flag) << "\n";
+                        out << x.path().string().substr(2, x.path().string().size() - 1) << " : " << algo(x.path().string()) << "\n";
                     }
                 }
             }
@@ -247,16 +254,11 @@ int main(int argc, char** argv) {
             std::cout << filename << " was successfully filled\n\n";
     }
 }
-    if (vm.count("sha")){
-        flag = 2;
-    }
-    if (vm.count("md5")){
-        flag = 1;
-    }
+
     if (vm.count("read")){
         for (const auto& x : vm["read"].as<std::vector<std::string>>()){
             if (!std::filesystem::is_directory("./" + x) && x != "cksum.ini")
-                std::cout << x << " : " << algo("./" + x, flag) << std::endl;
+                std::cout << x << " : " << algo("./" + x) << std::endl;
         }
     }
     if (vm.count("check")) {
@@ -303,10 +305,3 @@ int main(int argc, char** argv) {
     printInfo();
 #endif
 }
-
-
-//documentation I used (not copypasted)
-
-
-// https://github.com/pulzed/mINI
-// https://stackoverflow.com/questions/5007268/how-to-call-linux-command-from-c-program
