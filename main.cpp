@@ -31,24 +31,50 @@
 using namespace mINI;
 using namespace std::filesystem;
 namespace po = boost::program_options;
+namespace Utils {
 
-
-static std::vector<char> readAllBytes(const std::string& filename)
-{
-    std::ifstream ifs(filename, std::ios::binary|std::ios::ate);
-    std::ifstream::pos_type pos = ifs.tellg();
-
-    if (pos == 0) {
-        return std::vector<char>{};
+    std::string readAllText(const std::string& path) {
+        std::ifstream infile(path);
+        if (infile.fail()) {
+            throw std::invalid_argument{ "Unable to read file at path: '" + path + "'" };
+        }
+        infile.ignore(std::numeric_limits<std::streamsize>::max());
+        std::streamsize size = infile.gcount();
+        infile.clear();
+        infile.seekg(0, std::ifstream::beg);
+        std::string contents(size, ' ');
+        infile.read(&contents[0], size);
+        return contents;
     }
 
-    std::vector<char>  result(pos);
 
-    ifs.seekg(0, std::ios::beg);
-    ifs.read(&result[0], pos);
+    void writeAllText(const std::string& path, const std::string& contents) {
+        std::ofstream outfile(path);
+        if (outfile.fail()) {
+            throw std::invalid_argument{ "Unable to write file at path: '" + path + "'" };
+        }
+        outfile << contents;
+    }
+    static std::vector<char> readAllBytes(const std::string& filename)
+    {
+        std::ifstream ifs(filename, std::ios::binary|std::ios::ate);
+        std::ifstream::pos_type pos = ifs.tellg();
 
-    return result;
+        if (pos == 0) {
+            return std::vector<char>{};
+        }
+
+        std::vector<char>  result(pos);
+
+        ifs.seekg(0, std::ios::beg);
+        ifs.read(&result[0], pos);
+
+        return result;
+    }
 }
+
+using namespace Utils;
+
 std::string ssystem (const char *command) {
     char tmpname [L_tmpnam];
     std::tmpnam ( tmpname );
@@ -184,7 +210,7 @@ int main(int argc, char** argv) {
             ("version", "1.4.8.7")
             ("sha", "change algorithm to sha")
             ("md5", "change algorithm to md5sum")
-            ("file", po::value<std::string>()->default_value("out.txt"), "Writing to this file")
+            ("file", po::value<std::string>(), "Writing to this file")
             ("read", po::value<std::vector<std::string>>(), "Checking these files' cksums")
             ("check", po::value<std::vector<std::string>>(),"Treating provided INI files as separate cksums'");
     po::positional_options_description p;
@@ -197,21 +223,18 @@ int main(int argc, char** argv) {
         std::cout << description << std::endl;
     }
     if (vm.count("version")){
-        std::cout << description << std::endl;
+        std::cout << "1.4.8.6" << std::endl;
     }
     if (vm.count("file")){
         std::string filename = vm["file"].as<std::string>();
         std::string filename_path = "./" + filename;
         if (std::filesystem::exists(filename_path) && !std::filesystem::is_directory(filename_path)) {
-            std::ofstream cout;
-            cout.open(filename_path);
             for (const auto& x : std::filesystem::directory_iterator("./")){
-                if (!std::filesystem::is_directory(x.path().string()) && x.path().string() != "./cksum.ini"){
-                    cout << x.path().string() << " " <<  algo(x.path().string(), flag) << std::endl;
+                if (!std::filesystem::is_directory(x.path().string())){
+                    writeAllText(filename_path, x.path().string().substr(2, x.path().string().size() - 1) + " " + algo(x.path().string(), flag) + "\n");
                 }
-
-            cout.close();
-        }
+            }
+            std::cout << filename << " was successfully filled\n\n";
     }
 }
     if (vm.count("sha")){
@@ -226,26 +249,41 @@ int main(int argc, char** argv) {
                 std::cout << x << " : " << algo("./" + x, flag) << std::endl;
         }
     }
-    if (vm.count("check")){
-        std::vector<std::string> inp = vm["check"].as<std::vector<std::string>>();
+    if (vm.count("check")) {
         std::vector<std::string> inis;
-        for (const auto& x : inp){
-            if (std::regex_match(x, std::regex(R"("[^\\s]+(.*?)\\.ini$)"))){
-                inis.push_back(x);
-            }
-        }
-        for (const auto& x : inis){
-            if (std::filesystem::exists("./" + x)) {
-                IniParser pars("./" + x);
-                pars.readDataINI();
-                if (pars.size() == 0) {
-                    std::cerr << "EMPTY " << x << " INI FILE!\n";
-                    pars.fileSysDiff();
-                    continue;
+        if (vm["check"].as<std::vector<std::string>>().empty()) {
+            if (!std::filesystem::exists("./cksum.ini")) {
+                std::cout << "No files provided\n\n";
+            } else {
+                IniParser cksum("./cksum.ini");
+                cksum.readDataINI();
+                if (cksum.size() == 0) {
+                    std::cerr << "EMPTY " << "CKSUM.INI FILE!\n";
+                    cksum.fileSysDiff();
                 }
-                pars.countSum(1);
-                pars.fileSysDiff();
-                std::cout << "file " << x << " successfully checked\n\n";
+                cksum.countSum(flag);
+                cksum.fileSysDiff();
+                std::cout << "no additional files provided. file ./cksum.ini  successfully checked\n\n";
+            }
+        } else {
+            for (const auto &x: vm["check"].as<std::vector<std::string>>()) {
+                if (std::regex_match(x, std::regex(R"(^(?:[\w]\:|\\)(\\[a-z_\-\s0-9\.]+)+\.ini$)"))) {
+                    inis.push_back(x);
+                }
+            }
+            for (const auto &x: inis) {
+                if (std::filesystem::exists("./" + x)) {
+                    IniParser pars("./" + x);
+                    pars.readDataINI();
+                    if (pars.size() == 0) {
+                        std::cerr << "EMPTY " << x << " INI FILE!\n";
+                        pars.fileSysDiff();
+                        continue;
+                    }
+                    pars.countSum(flag);
+                    pars.fileSysDiff();
+                    std::cout << "file " << x << " successfully checked\n\n";
+                }
             }
         }
     }
@@ -253,21 +291,6 @@ int main(int argc, char** argv) {
     printInfo();
 #endif
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 //documentation I used (not copypasted)
