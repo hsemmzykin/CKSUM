@@ -258,11 +258,10 @@ int main(int argc, char** argv) {
                 IniParser cksum("./cksum.ini");
                 cksum.readDataINI();
                 if (cksum.size() == 0) {
-                    std::cerr << "EMPTY " << "CKSUM.INI FILE!\n";
+                    std::cout << "EMPTY " << "CKSUM.INI FILE!\n";
                     cksum.fileSysDiff();
                 }
                 cksum.countSum(flag);
-                cksum.fileSysDiff();
                 std::cout << "no additional files provided. file ./cksum.ini  successfully checked\n\n";
             }
         } else {
