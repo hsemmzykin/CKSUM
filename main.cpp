@@ -91,7 +91,8 @@ private:
     INIStructure data;
     std::map<std::string, std::string> dataList = std::map<std::string, std::string>();
 public:
-    explicit IniParser(const std::string& file = "./cksum.ini") : fil(file){fil.read(data);}
+    explicit IniParser(const std::string& file = "./cksum.ini") : fil(file){fil.read(data);
+        makeSection("sum");}
 
     void writeToINI(const std::string& section, std::pair<std::string, std::string> x){
          data[section].set(x.first, x.second);
@@ -185,7 +186,7 @@ int main(int argc, char** argv) {
             ("m, md5", "change algorithm to md5sum")
             ("f, file", po::value<std::string>()->default_value("out.txt"), "Writing to this file")
             ("r, read", po::value<std::vector<std::string>>(), "Checking these files' cksums")
-            ("c, check", po::value<std::vector<std::string>>()); // "Treating provided INI files as separate cksums'"
+            ("c, check", po::value<std::vector<std::string>>(),"Treating provided INI files as separate cksums'");
     po::positional_options_description p;
     p.add("read", -1);
     po::variables_map vm;
