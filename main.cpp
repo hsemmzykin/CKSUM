@@ -204,6 +204,7 @@ int main(int argc, char** argv) {
             INI.printData();
         }
     }
+
     po::options_description description("Usage: ");
     description.add_options()
             ("help", "NO ONE CAN HELP YOU HAHAHA")
@@ -228,12 +229,21 @@ int main(int argc, char** argv) {
     if (vm.count("file")){
         std::string filename = vm["file"].as<std::string>();
         std::string filename_path = "./" + filename;
+        if (!std::filesystem::exists(filename_path)){
+            std::cout << "FILE DIDN'T EXIST. CREATING ONE!\n";
+            FILE * file_ptr = fopen(filename.c_str(), "w");
+            fclose(file_ptr);
+        }
         if (std::filesystem::exists(filename_path) && !std::filesystem::is_directory(filename_path)) {
-            for (const auto& x : std::filesystem::directory_iterator("./")){
-                if (!std::filesystem::is_directory(x.path().string())){
-                    writeAllText(filename_path, x.path().string().substr(2, x.path().string().size() - 1) + " " + algo(x.path().string(), flag) + "\n");
+            std::ofstream out(filename_path, std::ofstream::out);
+            if (out.is_open()) {
+                for (const auto &x: std::filesystem::directory_iterator("./")) {
+                    if (!std::filesystem::is_directory(x.path().string())) {
+                        out << x.path().string().substr(2, x.path().string().size() - 1) << " : " << algo(filename_path, flag) << "\n";
+                    }
                 }
             }
+            out.close();
             std::cout << filename << " was successfully filled\n\n";
     }
 }
@@ -244,7 +254,7 @@ int main(int argc, char** argv) {
         flag = 1;
     }
     if (vm.count("read")){
-        for (auto x : vm["read"].as<std::vector<std::string>>()){
+        for (const auto& x : vm["read"].as<std::vector<std::string>>()){
             if (!std::filesystem::is_directory("./" + x) && x != "cksum.ini")
                 std::cout << x << " : " << algo("./" + x, flag) << std::endl;
         }
