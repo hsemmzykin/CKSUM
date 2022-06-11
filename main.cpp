@@ -260,7 +260,6 @@ int main(int argc, char** argv) {
         }
     }
     if (vm.count("check")) {
-        std::vector<std::string> inis;
         if (vm["check"].as<std::vector<std::string>>().empty()) {
             if (!std::filesystem::exists("./cksum.ini")) {
                 std::cout << "No files provided\n\n";
@@ -274,11 +273,11 @@ int main(int argc, char** argv) {
                 cksum.countSum(flag);
                 std::cout << "no additional files provided. file ./cksum.ini  successfully checked\n\n";
             }
-        } else {
+        }
+        else {
+            std::vector<std::string> inis;
             for (const auto &x: vm["check"].as<std::vector<std::string>>()) {
-                if (std::regex_match(x, std::regex(R"(^(?:[\w]\:|\\)(\\[a-z_\-\s0-9\.]+)+\.ini$)"))) {
-                    inis.push_back(x);
-                }
+                inis.push_back(x);
             }
             for (const auto &x: inis) {
                 if (std::filesystem::exists("./" + x)) {
@@ -292,6 +291,10 @@ int main(int argc, char** argv) {
                     pars.countSum(flag);
                     pars.fileSysDiff();
                     std::cout << "file " << x << " successfully checked\n\n";
+                }
+                else{
+                    std::cout << x << " <- this ini doesn't exist\n";
+                    continue;
                 }
             }
         }
