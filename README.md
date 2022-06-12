@@ -10,4 +10,4 @@ Then:
 ./a.out --[option] [args]
 ```
 FAQ:
-Use --help option in order to get list of available option.
+Use --help option in order to get list of available options.
