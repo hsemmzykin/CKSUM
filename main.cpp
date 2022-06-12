@@ -205,7 +205,7 @@ int main(int argc, char** argv) {
         }
     }
 
-    po::options_description description("Usage: ");
+    po::options_description description("Usage");
     description.add_options()
             ("help", "NO ONE CAN HELP YOU HAHAHA")
             ("version", "1.4.8.7")
@@ -213,6 +213,7 @@ int main(int argc, char** argv) {
             ("md5", "change algorithm to md5sum")
             ("file", po::value<std::string>(), "Writing to this file")
             ("read", po::value<std::vector<std::string>>(), "Checking these files' cksums")
+            ("info", "Print info about current directory and hashsums of all files")
             ("check", po::value<std::vector<std::string>>()->multitoken(),"Treating provided INI files as separate cksums'");
     po::positional_options_description p;
     p.add("read", -1);
@@ -224,13 +225,16 @@ int main(int argc, char** argv) {
         std::cout << description << std::endl;
     }
     if (vm.count("version")){
-        std::cout << "1.4.8.6" << std::endl;
+        std::cout << "1.4.8.7" << std::endl;
     }
     if (vm.count("sha")){
         flag = 2;
     }
     if (vm.count("md5")){
         flag = 1;
+    }
+    if (vm.count("info")){
+        printInfo();
     }
 
     if (vm.count("file")){
@@ -301,7 +305,5 @@ int main(int argc, char** argv) {
             }
         }
     }
-#ifdef PRINTDATA
-    printInfo();
-#endif
+
 }
